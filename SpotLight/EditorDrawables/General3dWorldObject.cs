@@ -35,8 +35,9 @@ namespace Spotlight.EditorDrawables
         public new static Vector4 hoverColor = new Vector4(EditableObject.hoverColor.Xyz, 0.125f);
 
         protected static Vector4 LinkColor = new Vector4(0f, 1f, 1f, 1f);
-        
-        public override Vector3 GlobalPosition {
+
+        public override Vector3 GlobalPosition
+        {
             get => Vector4.Transform(new Vector4(Position, 1), SceneDrawState.ZoneTransform.PositionTransform).Xyz;
             set => Position = Vector4.Transform(new Vector4(value, 1), SceneDrawState.ZoneTransform.PositionTransform.Inverted()).Xyz;
         }
@@ -92,14 +93,14 @@ namespace Spotlight.EditorDrawables
         /// </summary>
         /// <returns>The name of the Object</returns>
         public override string ToString() => ObjectName;
-        
+
         /// <summary>
         /// Create a General SM3DW Object
         /// </summary>
         /// <param name="objectEntry">Unknown</param>
         /// <param name="linkedObjs">List of objects that are linked with this object</param>
         /// <param name="objectsByReference">Unknown</param>
-        public General3dWorldObject(in LevelIO.ObjectInfo info, SM3DWorldZone zone, out bool loadLinks) 
+        public General3dWorldObject(in LevelIO.ObjectInfo info, SM3DWorldZone zone, out bool loadLinks)
             : base(info.Position, info.Rotation, info.Scale)
         {
             ID = info.ID;
@@ -116,12 +117,12 @@ namespace Spotlight.EditorDrawables
             {
                 foreach (var entry in info.PropertyEntries.Values)
                 {
-                    Properties.Add(entry.Key, entry.Parse()??"");
+                    Properties.Add(entry.Key, entry.Parse() ?? "");
                 }
             }
 
             DoModelLoad();
-            
+
             zone?.SubmitID(ID);
 
 
@@ -129,11 +130,11 @@ namespace Spotlight.EditorDrawables
         }
 
         public General3dWorldObject(
-            Vector3 pos, Vector3 rot, Vector3 scale, 
-            string iD, string objectName, string modelName, string className, 
+            Vector3 pos, Vector3 rot, Vector3 scale,
+            string iD, string objectName, string modelName, string className,
             Vector3 displayTranslation, string displayName,
             Dictionary<string, List<I3dWorldObject>> links, Dictionary<string, dynamic> properties, SM3DWorldZone zone)
-            : base(pos,rot,scale)
+            : base(pos, rot, scale)
         {
             ID = iD;
             ObjectName = objectName;
@@ -192,12 +193,74 @@ namespace Spotlight.EditorDrawables
             }
         }
 
+        public void LegacySave(HashSet<I3dWorldObject> alreadyWrittenObjs, ByamlNodeWriter writer, DictionaryNode objNode, bool isLinkDest = false)
+        {
+            objNode.AddDynamicValue("Comment", null);
+            objNode.AddDynamicValue("Id", ID);
+            objNode.AddDynamicValue("IsLinkDest", isLinkDest);
+            objNode.AddDynamicValue("LayerConfigName", "Common");
+
+            alreadyWrittenObjs.Add(this);
+
+            if (Links != null)
+            {
+                DictionaryNode linksNode = writer.CreateDictionaryNode(Links);
+
+                foreach (var (linkName, link) in Links)
+                {
+                    if (link.Count == 0)
+                        continue;
+
+                    ArrayNode linkNode = writer.CreateArrayNode(link);
+
+                    foreach (I3dWorldObject obj in link)
+                    {
+                        if (!alreadyWrittenObjs.Contains(obj))
+                        {
+                            DictionaryNode linkedObjNode = writer.CreateDictionaryNode(obj);
+                            obj.LegacySave(alreadyWrittenObjs, writer, linkedObjNode, true);
+                            linkNode.AddDictionaryNodeRef(linkedObjNode);
+                        }
+                        else
+                            linkNode.AddDictionaryRef(obj);
+                    }
+
+                    linksNode.AddArrayNodeRef(linkName, linkNode, true);
+                }
+                objNode.AddDictionaryNodeRef("Links", linksNode, true);
+            }
+            else
+            {
+                objNode.AddDynamicValue("Links", new Dictionary<string, dynamic>(), true);
+            }
+
+            objNode.AddDynamicValue("ModelName", string.IsNullOrEmpty(ModelName) ? null : ModelName);
+            objNode.AddDynamicValue("Rotate", LevelIO.Vector3ToDict(Rotation), true);
+            objNode.AddDynamicValue("Scale", LevelIO.Vector3ToDict(Scale), true);
+            objNode.AddDynamicValue("Translate", LevelIO.Vector3ToDict(Position, 100f), true);
+
+            objNode.AddDynamicValue("UnitConfig", ObjectUtils.CreateUnitConfig(this), true);
+
+            objNode.AddDynamicValue("UnitConfigName", ObjectName);
+
+            if (Properties.Count != 0)
+            {
+                foreach (KeyValuePair<string, dynamic> property in Properties)
+                {
+                    if (property.Value is string && property.Value == "")
+                        objNode.AddDynamicValue(property.Key, null, true);
+                    else
+                        objNode.AddDynamicValue(property.Key, property.Value, true);
+                }
+            }
+        }
+
         public void DeleteSelected3DWorldObject(List<I3dWorldObject> objectsToDelete)
         {
             if (Selected)
                 objectsToDelete.Add(this);
         }
-        
+
         public virtual Vector3 GetLinkingPoint(SM3DWorldScene editorScene)
         {
             return Selected ? editorScene.SelectionTransformAction.NewPos(GlobalPosition) : GlobalPosition + Vector3.Transform(GlobalRotation, DisplayTranslation);
@@ -271,7 +334,7 @@ namespace Spotlight.EditorDrawables
 
         #endregion
 
-        
+
 
         /// <summary>
         /// Draws the model to the given GL_Control
@@ -366,7 +429,7 @@ namespace Spotlight.EditorDrawables
 
         public override void GetSelectionBox(ref BoundingBox boundingBox)
         {
-            if(Selected)
+            if (Selected)
                 boundingBox.Include(GlobalPosition + Vector3.Transform(Framework.Mat3FromEulerAnglesDeg(Rotation), DisplayTranslation));
         }
 
@@ -578,13 +641,13 @@ namespace Spotlight.EditorDrawables
                 else
                     control.TextInput(obj.ID, "Object ID");
 
-                if(obj.comment!=null)
+                if (obj.comment != null)
                     control.TextInput(obj.comment, "Comment");
 
                 obj.Layer = control.TextInput(obj.Layer, "Layer");
                 obj.ObjectName = control.DropDownTextInput("Object Name", obj.ObjectName, DB_objectNames);
 
-                if(showClassNameInfo)
+                if (showClassNameInfo)
                     control.SetTooltip(classNameInfo);
                 obj.ClassName = control.DropDownTextInput("Class Name", obj.ClassName, DB_classNames);
                 if (showClassNameAlias)
@@ -682,7 +745,7 @@ namespace Spotlight.EditorDrawables
                 {
                     string key = propertyDictKeys[i];
 
-                    if(propertyInfos != null && propertyInfos.TryGetValue(key, out string desc))
+                    if (propertyInfos != null && propertyInfos.TryGetValue(key, out string desc))
                         control.SetTooltip(desc);
                     else
                         control.SetTooltip("No info for " + key);
@@ -697,7 +760,7 @@ namespace Spotlight.EditorDrawables
                     else if (propertyDict[key] is bool)
                         propertyDict[key] = control.CheckBox(key, propertyDict[key]);
                 }
-                
+
                 control.SetTooltip(null);
 
 
@@ -724,7 +787,7 @@ namespace Spotlight.EditorDrawables
                     }
 
                     var parameterForm = new ObjectParameterForm(parameterInfos);
-                    
+
                     if (parameterForm.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                     {
                         List<RevertableDictAddition.AddInfo> addInfos = new List<RevertableDictAddition.AddInfo>();
@@ -782,7 +845,7 @@ namespace Spotlight.EditorDrawables
                         },
                         Array.Empty<RevertableDictDeletion.SingleDeleteInDictInfo>()));
 
-                        
+
                         foreach (var changeInfo in changeInfos)
                         {
                             scene.AddToUndo(changeInfo);
@@ -797,7 +860,7 @@ namespace Spotlight.EditorDrawables
 
                         foreach (var parameter in otherParameters)
                             propertyDict.Add(parameter.Key, parameter.Value);
-                        
+
                         //update keys
                         propertyDictKeys = propertyDict.Keys.ToArray();
                     }
@@ -821,7 +884,7 @@ namespace Spotlight.EditorDrawables
 
                 foreach (var capturedProperty in capture)
                 {
-                    if(capturedProperty.Value!= propertyDict[capturedProperty.Key])
+                    if (capturedProperty.Value != propertyDict[capturedProperty.Key])
                     {
                         scene.AddToUndo(new RevertableDictEntryChange(capturedProperty.Key, propertyDict, capturedProperty.Value));
                     }
@@ -861,22 +924,22 @@ namespace Spotlight.EditorDrawables
 
             public void OnValueChanged()
             {
-                
+
             }
 
             public void OnValueChangeStart()
             {
-                
+
             }
 
             public void OnValueSet()
             {
-                
+
             }
 
             public void UpdateProperties()
             {
-                
+
             }
         }
 

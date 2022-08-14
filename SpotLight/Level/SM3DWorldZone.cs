@@ -52,7 +52,7 @@ namespace Spotlight.Level
 
 
 
-    #region Constants
+        #region Constants
         public const string COMBINED_SUFFIX = ".szs"; //Used in the Captain Toad Treasure Tracker Update and Bowsers Fury
 
 #if ODYSSEY
@@ -77,11 +77,11 @@ namespace Spotlight.Level
         public const string DESIGN_PREFIX = "Design_";
         public const string SOUND_PREFIX = "Sound_";
         private const string BYML_SUFFIX = ".byml";
-    #endregion
+        #endregion
 
 
 
-    #region Document State
+        #region Document State
         private DateTime lastSaveTime;
         bool isSaved = true;
 
@@ -124,11 +124,11 @@ namespace Spotlight.Level
                 }
             }
         }
-    #endregion
+        #endregion
 
 
 
-    #region ZoneRenderBatch
+        #region ZoneRenderBatch
         public readonly ZoneRenderBatch ZoneBatch = new ZoneRenderBatch();
 
         public void UpdateRenderBatch()
@@ -143,7 +143,7 @@ namespace Spotlight.Level
 
                 foreach (I3dWorldObject obj in objList)
                 {
-                    if(enabledLayers.Contains(obj.Layer))
+                    if (enabledLayers.Contains(obj.Layer))
                         obj.AddToZoneBatch(ZoneBatch);
                 }
             }
@@ -151,11 +151,11 @@ namespace Spotlight.Level
             foreach (I3dWorldObject obj in LinkedObjects)
                 obj.AddToZoneBatch(ZoneBatch);
         }
-    #endregion
+        #endregion
 
 
 
-    #region public getters
+        #region public getters
         /// <summary>
         /// Name of this Zone/Stage/Island
         /// </summary>
@@ -164,11 +164,11 @@ namespace Spotlight.Level
         /// The Directory this Zone/Stage/Island is stored in
         /// </summary>
         public string Directory => StageInfo.Directory;
-    #endregion
+        #endregion
 
 
 
-    #region Stage info
+        #region Stage info
         public StageInfo StageInfo { get; private set; }
         public ByteOrder ByteOrder { get; private set; }
 
@@ -183,11 +183,11 @@ namespace Spotlight.Level
         };
 
         private StageArchiveInfo[] stageArchiveInfos;
-    #endregion
+        #endregion
 
 
 
-    #region Objects
+        #region Objects
         public Dictionary<string, ObjectList> ObjLists = new Dictionary<string, ObjectList>();
 
         public ObjectList LinkedObjects = new ObjectList();
@@ -225,20 +225,20 @@ namespace Spotlight.Level
 
 
 
-    #region check outside changes and resolve
+        #region check outside changes and resolve
         public void CheckZoneNameChanges()
         {
             foreach (var placement in ZonePlacements)
             {
-                if(placement.ZoneLookupName!=placement.Zone.StageName)
+                if (placement.ZoneLookupName != placement.Zone.StageName)
                 {
-                    if(MessageBox.Show($"{placement.Zone.StageName} has a different Name than the Zone referenced in this Stage ({placement.ZoneLookupName}), do you want to reload the original Zone?", "Name change detected", MessageBoxButtons.YesNo)==DialogResult.Yes)
+                    if (MessageBox.Show($"{placement.Zone.StageName} has a different Name than the Zone referenced in this Stage ({placement.ZoneLookupName}), do you want to reload the original Zone?", "Name change detected", MessageBoxButtons.YesNo) == DialogResult.Yes)
                     {
                     RETRY:
                         if (!TryOpen(Directory, placement.ZoneLookupName, out SM3DWorldZone zone))
                             TryOpen(Program.BaseStageDataPath, placement.ZoneLookupName, out zone);
 
-                        if(zone==null)
+                        if (zone == null)
                         {
                             if (MessageBox.Show($"{placement.ZoneLookupName} could not be loaded", "Error", MessageBoxButtons.RetryCancel, MessageBoxIcon.Error) == DialogResult.Retry)
                                 goto RETRY;
@@ -291,11 +291,11 @@ namespace Spotlight.Level
 
             lastSaveTime = DateTime.Now;
         }
-    #endregion
+        #endregion
 
 
 
-    #region saving/loading
+        #region saving/loading
         #region common
         class StageArchiveInfo
         {
@@ -441,7 +441,7 @@ namespace Spotlight.Level
                 if (!File.Exists(fileName))
                     return;
 
-                SarcData sarc = SARC.UnpackRamN(YAZ0.Decompress(File.ReadAllBytes(fileName)));
+                SarcData sarc = SARC.UnpackRamN(OldYAZ0.Decompress(File.ReadAllBytes(fileName)));
                 loadedArchives.Add(arcName, sarc);
                 byteOrder = sarc.byteOrder;
 
@@ -465,7 +465,7 @@ namespace Spotlight.Level
                     if (!File.Exists(fileName))
                         break;
 
-                    SarcData sarc = SARC.UnpackRamN(YAZ0.Decompress(File.ReadAllBytes(fileName)));
+                    SarcData sarc = SARC.UnpackRamN(OldYAZ0.Decompress(File.ReadAllBytes(fileName)));
                     loadedArchives.Add(arcName, sarc);
                     byteOrder = sarc.byteOrder;
 
@@ -542,7 +542,7 @@ namespace Spotlight.Level
                 ExtraFiles[extraFilesIndex].Add(fileEntry.Key, fileEntry.Value);
         }
 
-        
+
         private void EvaluateLayers(LevelReader levelReader)
         {
 #if ODYSSEY
@@ -596,7 +596,7 @@ namespace Spotlight.Level
             var layersPerBitFieldWithCounts = new Dictionary<ushort, List<(string layer, int count)>>();
 
             foreach (var (layer, bitFieldsWithCounts) in scenarioBitFieldsPerLayerWithCounts_linked
-                .Where(x=>!scenarioBitFieldsPerLayerWithCounts.ContainsKey(x.Key))
+                .Where(x => !scenarioBitFieldsPerLayerWithCounts.ContainsKey(x.Key))
                 .Concat(scenarioBitFieldsPerLayerWithCounts))
             {
                 if (bitFieldsWithCounts.Count == 0)
@@ -609,7 +609,7 @@ namespace Spotlight.Level
 
                 foreach (var (bitField, count) in bitFieldsWithCounts)
                 {
-                    if (count>maxCount)
+                    if (count > maxCount)
                     {
                         maxBitfield = bitField;
                         maxCount = count;
@@ -743,16 +743,16 @@ namespace Spotlight.Level
             availibleLayers.AddRange(others);
 
 #if ODYSSEY
-#region calculate enabled layers per scenario
+            #region calculate enabled layers per scenario
 
-            foreach (var (bitField, (_,layers)) in layersPerBitField_lookUp)
+            foreach (var (bitField, (_, layers)) in layersPerBitField_lookUp)
             {
                 foreach (var index in BitUtils.AllSetBits(bitField))
                 {
                     enabledLayersPerScenario[index].UnionWith(layers);
                 }
             }
-#endregion
+            #endregion
 
             enabledLayers = enabledLayersPerScenario[0];
 #else
@@ -868,7 +868,7 @@ namespace Spotlight.Level
 
         private static StageArchiveInfo[] GetSaveArchiveInfos((string name, int extraFileIndex)[] categoriesToSave, StageInfo stageInfo)
         {
-            StageBymlInfo BymlInfo(string categoryName) => new StageBymlInfo(stageInfo.StageName+categoryName+ BYML_SUFFIX, categoryName + "_", categoryName == CATEGORY_MAP);
+            StageBymlInfo BymlInfo(string categoryName) => new StageBymlInfo(stageInfo.StageName + categoryName + BYML_SUFFIX, categoryName + "_", categoryName == CATEGORY_MAP);
 
             List<StageArchiveInfo> infos = new List<StageArchiveInfo>();
 
@@ -925,11 +925,11 @@ namespace Spotlight.Level
             //the Map Category should always be saved
             saveableCategories.Add((CATEGORY_MAP, 0));
 
-            
-            if (          CheckCategory(CATEGORY_DESIGN, 1))
+
+            if (CheckCategory(CATEGORY_DESIGN, 1))
                 saveableCategories.Add((CATEGORY_DESIGN, 1));
 
-            if (          CheckCategory(CATEGORY_SOUND, 2))
+            if (CheckCategory(CATEGORY_SOUND, 2))
                 saveableCategories.Add((CATEGORY_SOUND, 2));
 
             return saveableCategories.ToArray();
@@ -967,13 +967,16 @@ namespace Spotlight.Level
                 {
                     using (MemoryStream stream = new MemoryStream())
                     {
-                        WriteStageByml(stream, bymlInfo.CategoryPrefix, bymlInfo.ContainsZones);
+                        LegacyWriteStageByml(stream, bymlInfo.CategoryPrefix, bymlInfo.ContainsZones);
 
                         sarcData.Files.Add(bymlInfo.FileName, stream.ToArray());
                     }
                 }
 
-                File.WriteAllBytes(Path.Combine(Directory, stageArcInfo.FileName), YAZ0.Compress(SARCExt.SARC.PackN(sarcData)));
+                byte[] b = SARCExt.SARC.PackN(sarcData).Item2;
+
+                File.WriteAllBytes(Path.Combine(Directory, "RAW_" + stageArcInfo.FileName), b);
+                File.WriteAllBytes(Path.Combine(Directory, stageArcInfo.FileName), OldYAZ0.Compress(b));
             }
         }
 
@@ -993,6 +996,93 @@ namespace Spotlight.Level
             }
             else
                 throw new Exception("The extra file " + fileEntry.Key + "has no way to save");
+        }
+
+        // Odysey not supported.
+        private void LegacyWriteStageByml(MemoryStream stream, string prefix, bool saveZonePlacements)
+        {
+            ByamlNodeWriter writer = new ByamlNodeWriter(stream, false, ByteOrder, 1);
+
+            #region Create ZoneList
+            ByamlNodeWriter.ArrayNode zonesNode = writer.CreateArrayNode();
+
+            if (saveZonePlacements)
+            {
+                int zoneID = 0;
+
+                foreach (var zonePlacement in ZonePlacements)
+                {
+                    ByamlNodeWriter.DictionaryNode objNode = writer.CreateDictionaryNode();
+
+                    objNode.AddDynamicValue("Comment", null);
+                    objNode.AddDynamicValue("Id", "zone" + zoneID++);
+                    objNode.AddDynamicValue("IsLinkDest", false);
+                    objNode.AddDynamicValue("LayerConfigName", "Common");
+
+                    {
+                        objNode.AddDynamicValue("Links", new Dictionary<string, dynamic>(), true);
+                    }
+
+                    objNode.AddDynamicValue("ModelName", null);
+                    objNode.AddDynamicValue("Rotate", LevelIO.Vector3ToDict(zonePlacement.Rotation), true);
+                    objNode.AddDynamicValue("Scale", LevelIO.Vector3ToDict(Vector3.One), true);
+                    objNode.AddDynamicValue("Translate", LevelIO.Vector3ToDict(zonePlacement.Position, 100f), true);
+
+                    objNode.AddDynamicValue("UnitConfig", new Dictionary<string, dynamic>
+                    {
+                        ["DisplayName"] = "ï¿½Rï¿½Cï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ï¿½Oï¿½zï¿½u)",
+                        ["DisplayRotate"] = LevelIO.Vector3ToDict(Vector3.Zero),
+                        ["DisplayScale"] = LevelIO.Vector3ToDict(Vector3.One),
+                        ["DisplayTranslate"] = LevelIO.Vector3ToDict(Vector3.Zero),
+                        ["GenerateCategory"] = "",
+                        ["ParameterConfigName"] = "Zone",
+                        ["PlacementTargetFile"] = CATEGORY_MAP
+                    }, true);
+
+                    objNode.AddDynamicValue("UnitConfigName", zonePlacement.Zone.StageName);
+
+                    zonesNode.AddDictionaryNodeRef(objNode, true);
+                }
+            }
+            #endregion
+
+            HashSet<I3dWorldObject> alreadyWrittenObjs = new HashSet<I3dWorldObject>();
+
+            ByamlNodeWriter.DictionaryNode rootNode = writer.CreateDictionaryNode();
+
+            rootNode.AddDynamicValue("FilePath", "N/A");
+
+            ByamlNodeWriter.ArrayNode objsNode = writer.CreateArrayNode();
+
+            foreach (var (listName, objList) in ObjLists)
+            {
+                if (!listName.StartsWith(prefix)) //ObjList is not part of the Category
+                    continue;
+
+                ByamlNodeWriter.ArrayNode objListNode = writer.CreateArrayNode();
+
+                foreach (I3dWorldObject obj in objList)
+                {
+                    if (!alreadyWrittenObjs.Contains(obj))
+                    {
+                        ByamlNodeWriter.DictionaryNode objNode = writer.CreateDictionaryNode(obj);
+                        obj.LegacySave(alreadyWrittenObjs, writer, objNode, false);
+                        objListNode.AddDictionaryNodeRef(objNode);
+                        objsNode.AddDictionaryNodeRef(objNode);
+                    }
+                    else
+                    {
+                        objListNode.AddDictionaryRef(obj);
+                        objsNode.AddDictionaryRef(obj);
+                    }
+                }
+                rootNode.AddArrayNodeRef(listName.Substring(prefix.Length), objListNode, true);
+            }
+            rootNode.AddArrayNodeRef("Objs", objsNode, true);
+            if (saveZonePlacements)
+                rootNode.AddArrayNodeRef("ZoneList", zonesNode, true);
+
+            writer.Write(rootNode, true);
         }
 
         private void WriteStageByml(MemoryStream stream, string prefix, bool saveZonePlacements)
@@ -1029,7 +1119,7 @@ namespace Spotlight.Level
         {
             //apologies for the bad code, merging odyssey and 3d world saving code isn't an easy task
 
-#region Create ZoneList
+            #region Create ZoneList
             ByamlNodeWriter.ArrayNode zonesNode = writer.CreateArrayNode();
 
             if (saveZonePlacements)
@@ -1051,7 +1141,7 @@ namespace Spotlight.Level
                     zonesNode.AddDictionaryNodeRef(objNode, true);
                 }
             }
-#endregion
+            #endregion
 
             HashSet<I3dWorldObject> alreadyWrittenObjs = new HashSet<I3dWorldObject>();
 
@@ -1061,7 +1151,7 @@ namespace Spotlight.Level
             foreach (var (listName, objList) in ObjLists)
             {
 #if ODYSSEY
-                if (objList.Count==0)
+                if (objList.Count == 0)
                     continue; //level files in Odyssey don't contain empty lists
 #endif
 
@@ -1115,8 +1205,8 @@ namespace Spotlight.Level
             listsNode.AddArrayNodeRef("Objs", objsNode, true);
 #endif
         }
-#endregion
-#endregion
+        #endregion
+        #endregion
     }
 }
 

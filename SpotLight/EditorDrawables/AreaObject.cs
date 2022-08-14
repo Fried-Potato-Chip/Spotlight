@@ -121,7 +121,7 @@ namespace Spotlight.EditorDrawables
             Priority = priority;
             Properties = properties;
             Links = links;
-            
+
             zone?.SubmitID(ID);
         }
 
@@ -146,6 +146,72 @@ namespace Spotlight.EditorDrawables
             alreadyWrittenObjs.Add(this);
 
             ObjectUtils.SaveLinks(Links, alreadyWrittenObjs, writer, objNode, layers);
+
+            objNode.AddDynamicValue("ModelName", ModelName);
+
+
+            objNode.AddDynamicValue("Rotate", LevelIO.Vector3ToDict(Rotation), true);
+            objNode.AddDynamicValue("Scale", LevelIO.Vector3ToDict(Scale), true);
+            objNode.AddDynamicValue("Translate", LevelIO.Vector3ToDict(Position, 100f), true);
+
+            objNode.AddDynamicValue("UnitConfig", ObjectUtils.CreateUnitConfig(ClassName), true);
+
+            objNode.AddDynamicValue("UnitConfigName", ClassName);
+
+            if (Properties.Count != 0)
+            {
+                foreach (KeyValuePair<string, dynamic> property in Properties)
+                {
+                    if (property.Value is string && property.Value == "")
+                        objNode.AddDynamicValue(property.Key, null, true);
+                    else
+                        objNode.AddDynamicValue(property.Key, property.Value, true);
+                }
+            }
+        }
+
+        public void LegacySave(HashSet<I3dWorldObject> alreadyWrittenObjs, ByamlNodeWriter writer, DictionaryNode objNode, bool isLinkDest = false)
+        {
+            objNode.AddDynamicValue("Comment", null);
+            objNode.AddDynamicValue("Id", ID);
+            objNode.AddDynamicValue("Priority", Priority);
+
+            objNode.AddDynamicValue("IsLinkDest", isLinkDest);
+            objNode.AddDynamicValue("LayerConfigName", "Common");
+
+            alreadyWrittenObjs.Add(this);
+
+            if (Links != null)
+            {
+                DictionaryNode linksNode = writer.CreateDictionaryNode(Links);
+
+                foreach (var (linkName, link) in Links)
+                {
+                    if (link.Count == 0)
+                        continue;
+
+                    ArrayNode linkNode = writer.CreateArrayNode(link);
+
+                    foreach (I3dWorldObject obj in link)
+                    {
+                        if (!alreadyWrittenObjs.Contains(obj))
+                        {
+                            DictionaryNode linkedObjNode = writer.CreateDictionaryNode(obj);
+                            obj.LegacySave(alreadyWrittenObjs, writer, linkedObjNode, true);
+                            linkNode.AddDictionaryNodeRef(linkedObjNode);
+                        }
+                        else
+                            linkNode.AddDictionaryRef(obj);
+                    }
+
+                    linksNode.AddArrayNodeRef(linkName, linkNode, true);
+                }
+                objNode.AddDictionaryNodeRef("Links", linksNode, true);
+            }
+            else
+            {
+                objNode.AddDynamicValue("Links", new Dictionary<string, dynamic>(), true);
+            }
 
             objNode.AddDynamicValue("ModelName", ModelName);
 
@@ -486,7 +552,7 @@ namespace Spotlight.EditorDrawables
                         break;
 
                     case "ViewCtrlArea": //grey
-                        colorA = new Vector4(0.5f ,0.5f ,0.5f , 1);
+                        colorA = new Vector4(0.5f, 0.5f, 0.5f, 1);
                         colorB = new Vector4(0.75f, 0.75f, 0.75f, 1);
                         break;
 
